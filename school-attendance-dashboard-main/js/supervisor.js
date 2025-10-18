@@ -31,8 +31,8 @@ auth.onAuthStateChanged(async (user) => {
     document.body.style.display = "flex";
     document.getElementById('loading').classList.add('visible');
     subscribeToAbsences();
-    // default: do not group to match table counts
-    window.groupByClass = false;
+    // Group cards by Division/Class/Section so multiple reports collapse into one card
+    window.groupByClass = true;
 });
 
 function subscribeToAbsences(){
@@ -174,23 +174,14 @@ function renderReports(reportsToDisplay) {
             
             card.innerHTML = `
                 <div class="card-header"><i class="fas fa-school"></i> ${reportData.class}
-                    <span style="margin-left:auto; font-weight:600;">${reportData.count || 0}</span>
+                    <span class="count-badge">${reportData.count || 0}</span>
                 </div>
                 <div class="card-body">
-                    <p><i class="fas fa-building"></i> <strong>Division:</strong> ${reportData.division}</p>
-                    <p><i class="fas fa-chalkboard"></i> <strong>Section:</strong> ${reportData.section}</p>
-                    <p><i class="fas fa-user-group"></i> <strong>Students:</strong> ${reportData.count}</p>
-                    <p><i class="fas fa-info-circle"></i> <strong>Status:</strong> ${reportData.attendanceStatus || ''}</p>
-                    <p><i class="fas fa-comment"></i> <strong>Reason:</strong> ${reportData.reason || ''}</p>
-                    <ul class="students-list">
-                        ${reportData.students.map(student => `
-                            <li>
-                                <span class="meta">${student.name}</span>
-                                <span class="status-badge status-${(student.status||'').toLowerCase()}">${student.status||''}</span>
-                                ${student.reason ? `<span class="reason">${student.reason}</span>` : ''}
-                            </li>
-                        `).join('')}
-                    </ul>
+                    <div class="meta-rows" aria-label="Summary">
+                        <div class="meta-row"><span class="label"><i class="fas fa-building"></i> Division</span><span class="value">${reportData.division}</span></div>
+                        <div class="meta-row"><span class="label"><i class="fas fa-chalkboard"></i> Section</span><span class="value">${reportData.section}</span></div>
+                        <div class="meta-row"><span class="label"><i class="fas fa-user"></i> Name</span><span class="value">${reportData.students.map(s=>s.name).join(', ')}</span></div>
+                    </div>
                 </div>
                 <div class="card-footer"><i class="fas fa-clock"></i> Reported On: ${formattedTime}</div>
             `;
