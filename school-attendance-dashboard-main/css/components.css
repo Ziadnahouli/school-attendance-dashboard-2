@@ -62,17 +62,48 @@
 .card:hover { box-shadow: 0 12px 28px rgba(0,0,0,0.12); transform: translateY(-2px); transition: box-shadow .2s, transform .2s; }
 .hidden { display: none !important; }
 
-/* Students list inside supervisor cards */
-.students-list { list-style: none; padding: 0; margin: 8px 0 0 0; display: grid; gap: 6px; }
-.students-list li { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 8px; font-size: var(--font-size-sm); }
-.students-list .meta { display:flex; align-items:center; gap:8px; }
-.students-list .reason { color: var(--secondary-text); font-style: italic; }
+/* Students table inside supervisor cards */
+.students-table { width: 100%; border-collapse: collapse; margin-top: 10px; table-layout: auto; display: table; }
+.students-table thead th { text-align: left; color: var(--secondary-text); font-size: 11px; text-transform: uppercase; letter-spacing: .02em; padding: 6px 0; border-top: 1px solid var(--border-color); }
+.students-table tbody td { padding: 6px 0; font-size: 13px; vertical-align: middle; }
+.students-table colgroup col.col-name { width: 55%; }
+.students-table colgroup col.col-status { width: 110px; }
+.students-table colgroup col.col-reason { width: auto; }
+.students-table .reason { color: var(--secondary-text); font-style: italic; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* Status badges */
 .status-badge { display:inline-block; padding: 2px 8px; border-radius: 999px; font-size: var(--font-size-xs); font-weight: 600; border: 1px solid var(--border-color); }
 .status-unexcused { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
 .status-excused { background: #fef9c3; color: #854d0e; border-color: #fde68a; }
 .status-late { background: #ffedd5; color: #9a3412; border-color: #fed7aa; }
+
+/* Professional card refinements */
+.card-header { display:flex; align-items:center; gap:10px; padding: 10px 12px; border-bottom: 1px solid var(--border-color); }
+.card-header i { color: var(--primary-color); }
+.count-badge { margin-left:auto; background: #F3F4F6; color: var(--text-color); border: 1px solid var(--border-color); padding: 2px 10px; border-radius: 999px; font-size: var(--font-size-xs); font-weight: 700; }
+.card-body { padding: 10px; display: grid; gap: 10px 14px; }
+/* Summary meta as robust 2-col grid (label fixed, value flexible) */
+.meta-grid2 { display: grid; grid-template-columns: 140px 1fr; column-gap: 16px; row-gap: 6px; width: 100%; }
+.meta-grid2 .label { color: var(--secondary-text); font-weight: 600; white-space: nowrap; display: inline-flex; align-items: center; gap: 8px; }
+.meta-grid2 .value { color: var(--text-color); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.meta-grid2 { padding-bottom: 8px; border-bottom: 1px solid var(--border-color); }
+
+/* Alternative: reliable flex rows */
+.meta-rows { display: grid; gap: 4px; }
+.meta-row { display: flex; align-items: center; gap: 10px; }
+.meta-row .label { min-width: 110px; color: var(--secondary-text); font-weight: 600; display: inline-flex; align-items: center; gap: 8px; font-size: 12px; }
+.meta-row .value { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-color); font-size: 13px; }
+.meta-rows { padding-bottom: 8px; border-bottom: 1px solid var(--border-color); }
+.card-body p { margin: 0; }
+.card-footer { border-top: 1px solid var(--border-color); padding: 8px 12px; color: var(--secondary-text); font-size: var(--font-size-sm); }
+
+@media (max-width: 720px) {
+  .meta-table colgroup col.col-label { width: 120px; }
+  /* Stack summary rows on narrow screens */
+  .meta-grid2 { grid-template-columns: 1fr; }
+  .meta-grid2 .label { min-width: 0; }
+  .meta-grid2 .value { white-space: normal; }
+}
 
 .welcome-card {
   background: linear-gradient(90deg, color-mix(in srgb, var(--accent-color) 35%, #fff 65%), #fff);
@@ -242,14 +273,15 @@
 .content-cards #absenceList {
   display: grid;
   gap: var(--space-lg);
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
 }
 
 /* Compact cards to reduce height */
-.card.compact .card-header { padding: 8px 10px; font-size: var(--font-size-base); }
-.card.compact .card-body { padding: 10px; gap: 6px; display: grid; grid-template-columns: 1fr 1fr; align-items: start; }
-.card.compact .card-body p { margin: 0; font-size: var(--font-size-sm); }
-.card.compact .card-footer { padding: 8px 10px; font-size: var(--font-size-xs); }
+.card.compact .card-header { padding: 6px 10px; font-size: 13px; }
+.card.compact .count-badge { padding: 1px 8px; font-size: 10px; }
+.card.compact .card-body { padding: 8px; gap: 6px; display: block; }
+.card.compact .card-body p { margin: 0; font-size: 13px; }
+.card.compact .card-footer { padding: 6px 10px; font-size: 12px; }
 .card.compact .absentees { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 @media (max-width: 700px) {
