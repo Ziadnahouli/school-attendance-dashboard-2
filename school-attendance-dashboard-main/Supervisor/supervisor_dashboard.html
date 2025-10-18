@@ -7,10 +7,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="../css/theme.css">
-    <link rel="stylesheet" href="../css/base.css">
-    <link rel="stylesheet" href="../css/components.css">
-    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/theme.css?v=3">
+    <link rel="stylesheet" href="../css/base.css?v=3">
+    <link rel="stylesheet" href="../css/components.css?v=3">
+    <link rel="stylesheet" href="../css/dashboard.css?v=3">
     <style>
       .container { margin: 8px auto; padding: 0 8px; }
       .action-bar { margin-bottom: 8px; }
@@ -82,14 +82,17 @@
     </main>
 
     <footer class="footer" role="contentinfo">
-        <div class="left-side">
+        <div class="footer-center">
             <img src="../logo 1.png" alt="About Us" class="footer-logo-about" onclick="goAbout()" loading="lazy">
-            <span> 2025 RHTI. All rights reserved. Made by Ziad</span>
+            <img src="../logo 2.png" alt="RHTI Logo" class="footer-logo-rhti" loading="lazy">
+            <div class="footer-text">
+                <a href="#" onclick="goAbout()">About Us</a>
+                <span>© 2025 RHTI. All rights reserved.</span>
+            </div>
         </div>
-        <img src="../logo 2.png" alt="RHTI Logo" class="footer-logo-rhti" loading="lazy">
     </footer>
 
-    <script src="../js/supervisor.js"></script>
+    <script src="../js/supervisor.js?v=3"></script>
     <script src="../js/ui.js"></script>
     <script src="../js/main-supervisor.js"></script>
 </body>
