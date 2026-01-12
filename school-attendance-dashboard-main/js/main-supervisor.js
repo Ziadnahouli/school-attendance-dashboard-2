@@ -77,6 +77,7 @@
             <td style="white-space: nowrap;">${formattedTime}</td>
             <td style="font-weight: 700; color: #2c3e50;">${r.teacherName || 'System Record'}</td>
             <td style="font-style: italic;">${r.subject || 'N/A'}</td>
+            <td style="font-weight:bold; color:#22c55e;">S${r.session || 'N/A'}</td>
             <td>${r.division || 'N/A'}</td>
             <td>${r.class || 'N/A'}</td>
             <td>${r.section || 'N/A'}</td>
