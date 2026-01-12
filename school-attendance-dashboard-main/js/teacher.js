@@ -96,7 +96,7 @@ async function submitAbsence() {
     // New Fields
     const teacherFullName = document.getElementById("teacherFullName").value;
     const subjectTaught = document.getElementById("subjectTaught").value;
-    
+    const sessionNum = document.getElementById("sessionNumber").value; 
     const division = document.getElementById("division").value;
     const className = document.getElementById("className").value;
     const section = document.getElementById("section").value;
@@ -126,6 +126,7 @@ async function submitAbsence() {
             body: JSON.stringify({
                 teacherName: teacherFullName,
                 subject: subjectTaught,
+                session: sessionNum,
                 division: division,
                 class: className,
                 section: section,
