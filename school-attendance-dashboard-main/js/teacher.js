@@ -33,8 +33,13 @@ async function fetchClasses() {
         allClasses = await response.json();
 
         divisionDropdown.innerHTML = '<option value="" disabled selected>-- Select a Division --</option>';
-        const divisions = [...new Set(allClasses.map(c => c.division))];
-        divisions.sort().forEach(div => {
+        
+        // FILTER: Remove Preschool from the list
+        const divisions = [...new Set(allClasses.map(c => c.division))]
+            .filter(div => div.toLowerCase() !== "preschool") 
+            .sort();
+
+        divisions.forEach(div => {
             const option = document.createElement('option');
             option.value = div;
             option.textContent = div;
@@ -44,7 +49,6 @@ async function fetchClasses() {
     } catch (error) {
         console.error("Error fetching classes:", error);
         divisionDropdown.innerHTML = '<option value="" disabled selected>Error loading divisions</option>';
-        alert("Could not load class list from server.");
     }
 }
 
@@ -89,24 +93,27 @@ document.getElementById('className').addEventListener('change', (event) => {
 });
 
 async function submitAbsence() {
+    // New Fields
+    const teacherFullName = document.getElementById("teacherFullName").value;
+    const subjectTaught = document.getElementById("subjectTaught").value;
+    
     const division = document.getElementById("division").value;
     const className = document.getElementById("className").value;
     const section = document.getElementById("section").value;
+    
     const chips = Array.from(document.querySelectorAll('#studentChips .chip[data-name]'));
-    // Prefer chips (structured list). Fallback to textarea if no chips present
-    const chipsNames = chips.map(c => (c.dataset.name||'').trim()).filter(Boolean);
-    const absentList = chipsNames.join(', ');
-    // Build students array if chips present
+    const absentList = chips.map(c => (c.dataset.name||'').trim()).join(', ');
+    
     const students = chips.map(c => ({
         name: (c.dataset.name||'').trim(),
         status: (c.dataset.status||'Unexcused').trim(),
         reason: (c.dataset.reason||'').trim()
     }));
-    // Legacy top-level fields preserved for backward compatibility (take first if available)
-    const attendanceStatus = students[0]?.status || 'Unexcused';
-    const reason = students[0]?.reason || '';
 
-    if (!division || !className || !section || !absentList) { alert("Please fill out all fields."); return; }
+    if (!teacherFullName || !subjectTaught || !division || !className || !section || !absentList) { 
+        alert("Please fill out all fields, including your name and subject."); 
+        return; 
+    }
 
     const submitBtn = document.querySelector('.btn-submit');
     submitBtn.disabled = true;
@@ -117,36 +124,23 @@ async function submitAbsence() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
+                teacherName: teacherFullName,
+                subject: subjectTaught,
                 division: division,
                 class: className,
                 section: section,
                 absentees: absentList,
-                attendanceStatus: attendanceStatus,
-                reason: reason,
                 students: students,
+                attendanceStatus: students[0]?.status || 'Unexcused'
             }),
         });
-        if (!response.ok) { throw new Error(`Server responded with status: ${response.status}`); }
+        if (!response.ok) throw new Error('Submission failed');
+        
         alert("Absence report submitted successfully!");
-
-        document.getElementById("division").value = "";
-        document.getElementById("className").value = "";
-        document.getElementById("className").innerHTML = '<option value="">-- First Select a Division --</option>';
-        document.getElementById("className").disabled = true;
-        document.getElementById("section").value = "";
-        document.getElementById("section").disabled = true;
-        var legacyTextarea = document.getElementById("absentList");
-        if (legacyTextarea) legacyTextarea.value = "";
-        // Clear student chips
-        const chipsWrap = document.getElementById('studentChips');
-        if (chipsWrap) chipsWrap.innerHTML = '';
-        var legacyStatusEl = document.getElementById("attendanceStatus");
-        if (legacyStatusEl) legacyStatusEl.value = 'Unexcused';
-        var legacyReasonEl = document.getElementById("reason");
-        if (legacyReasonEl) legacyReasonEl.value = "";
+        location.reload(); // Refresh to clear form
 
     } catch (error) {
-        alert("Error submitting report: " + error.message);
+        alert("Error: " + error.message);
     } finally {
         submitBtn.disabled = false;
         submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Absence';
@@ -157,65 +151,29 @@ window.submitAbsence = submitAbsence;
 window.logout = async function() { await auth.signOut(); window.location.href = "teacher_login.html"; }
 window.goAbout = function() { window.open("about_us.html", "_blank"); }
 
-// Enhance "Reason" UI with chips interactions
 document.addEventListener('DOMContentLoaded', () => {
-    // Student chips add/remove
     const studentInput = document.getElementById('studentName');
     const addBtn = document.getElementById('addStudentBtn');
     const chipsWrap = document.getElementById('studentChips');
-    const textarea = document.getElementById('absentList');
     const studentStatus = document.getElementById('studentStatus');
     const studentReason = document.getElementById('studentReason');
-    function syncTextarea(){
-        if(!textarea) return;
-        const names = Array.from(chipsWrap.querySelectorAll('.chip[data-name]')).map(c => c.dataset.name);
-        textarea.value = names.join(', ');
-    }
+
     function addStudent(name, status, reason){
         const n = String(name||'').trim();
         if(!n) return;
-        // avoid duplicates (case-insensitive)
-        const exists = Array.from(chipsWrap.querySelectorAll('.chip[data-name]')).some(c => (c.dataset.name||'').toLowerCase() === n.toLowerCase());
-        if(exists) { studentInput.value=''; return; }
         const chip = document.createElement('button');
         chip.type = 'button';
         chip.className = 'chip';
         chip.dataset.name = n;
-        chip.dataset.status = (status||studentStatus?.value||'Unexcused');
-        chip.dataset.reason = (reason||studentReason?.value||'');
+        chip.dataset.status = status || 'Unexcused';
+        chip.dataset.reason = reason || '';
         const tag = chip.dataset.reason ? `${chip.dataset.status} · ${chip.dataset.reason}` : chip.dataset.status;
-        chip.innerHTML = `<span>${n}</span> <span class=\"badge\" style=\"margin-left:6px;\">${tag}</span> <span class=\"chip-remove\" aria-label=\"Remove\">×</span>`;
-        chip.addEventListener('click', (e)=>{
-            if(e.target && e.target.classList.contains('chip-remove')){
-                chip.remove();
-                syncTextarea();
-            }
-        });
+        chip.innerHTML = `<span>${n}</span> <span class="badge" style="margin-left:6px;">${tag}</span> <span class="chip-remove">×</span>`;
+        chip.querySelector('.chip-remove').onclick = () => chip.remove();
         chipsWrap.appendChild(chip);
         studentInput.value = '';
-        if(studentReason) studentReason.value = '';
-        if(studentStatus) studentStatus.value = 'Unexcused';
-        syncTextarea();
+        studentReason.value = '';
     }
-    if(addBtn && studentInput && chipsWrap){
-        addBtn.addEventListener('click', ()=> addStudent(studentInput.value, studentStatus?.value, studentReason?.value));
-        studentInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter'){ e.preventDefault(); addStudent(studentInput.value, studentStatus?.value, studentReason?.value); }});
-        // No initial parse since legacy textarea is removed
-    }
-    const reasonChips = document.querySelectorAll('#reasonChips .chip');
-    const reasonInput = document.getElementById('reason');
-    if (reasonChips && reasonInput) {
-        reasonChips.forEach(chip => {
-            chip.addEventListener('click', () => {
-                reasonChips.forEach(c => c.classList.remove('active'));
-                reasonInput.value = chip.dataset.reason || '';
-                chip.classList.add('active');
-                reasonInput.focus();
-            });
-        });
-        reasonInput.addEventListener('input', () => {
-            const val = (reasonInput.value || '').trim().toLowerCase();
-            reasonChips.forEach(c => c.classList.toggle('active', val === (c.dataset.reason||'').toLowerCase()));
-        });
-    }
+
+    addBtn.addEventListener('click', () => addStudent(studentInput.value, studentStatus.value, studentReason.value));
 });
