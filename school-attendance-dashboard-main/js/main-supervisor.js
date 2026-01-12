@@ -45,48 +45,51 @@
 
   var currentSort = { key: 'timestamp', dir: 'desc' };
 
-  function renderTable(reports){
-    var sorted = reports.slice().sort(function(a,b){
-      var aVal = a[currentSort.key];
-      var bVal = b[currentSort.key];
-      if(currentSort.key === 'timestamp'){
-        aVal = aVal instanceof Date ? aVal : new Date(aVal);
-        bVal = bVal instanceof Date ? bVal : new Date(bVal);
-      } else {
-        aVal = String(aVal).toLowerCase();
-        bVal = String(bVal).toLowerCase();
-      }
-      if(aVal < bVal) return currentSort.dir === 'asc' ? -1 : 1;
-      if(aVal > bVal) return currentSort.dir === 'asc' ? 1 : -1;
-      return 0;
-    });
-
+  function renderTable(reports) {
     var tbody = document.getElementById('reportsTableBody');
+    if (!tbody) return; // Safety check
+    
     tbody.innerHTML = '';
-    sorted.forEach(function(r){
-      var row = document.createElement('tr');
-      var formattedTime = r.timestamp instanceof Date ? r.timestamp.toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : r.timestamp;
-      row.innerHTML = `
-        <td>${r.division}</td>
-        <td>${r.class}</td>
-        <td>${r.section}</td>
-        <td>${r.absentees}</td>
-        <td>${r.attendanceStatus || ''}</td>
-        <td>${r.reason || ''}</td>
-        <td>${formattedTime}</td>
-      `;
-      tbody.appendChild(row);
+
+    // Sort reports by time (newest first) before rendering
+    var sortedReports = reports.slice().sort(function(a, b) {
+        var dateA = a.timestamp instanceof Date ? a.timestamp : new Date(a.timestamp);
+        var dateB = b.timestamp instanceof Date ? b.timestamp : new Date(b.timestamp);
+        return dateB - dateA;
     });
 
-    // Update header sort indicators
+    sortedReports.forEach(function(r) {
+        var row = document.createElement('tr');
+
+        // 1. Format the Timestamp
+        var dateObj = r.timestamp instanceof Date ? r.timestamp : new Date(r.timestamp);
+        var formattedTime = dateObj.toLocaleString('en-US', { 
+            hour: '2-digit', 
+            minute: '2-digit', 
+            month: 'short', 
+            day: 'numeric', 
+            year: 'numeric' 
+        });
+
+        // 2. Build the row to match your <thead> order:
+        // Order: Time | Teacher | Subject | Division | Class | Section | Absentees
+        row.innerHTML = `
+            <td style="white-space: nowrap;">${formattedTime}</td>
+            <td style="font-weight: 700; color: #2c3e50;">${r.teacherName || 'System Record'}</td>
+            <td style="font-style: italic;">${r.subject || 'N/A'}</td>
+            <td>${r.division || 'N/A'}</td>
+            <td>${r.class || 'N/A'}</td>
+            <td>${r.section || 'N/A'}</td>
+            <td style="color: #c0392b; font-weight: 600;">${r.absentees || ''}</td>
+        `;
+
+        tbody.appendChild(row);
+    });
+
+    // Update Header Sort Indicators
     var headers = document.querySelectorAll('#reportsTable th');
-    headers.forEach(function(th){ th.classList.remove('sort-asc', 'sort-desc'); });
-    var keys = ['division', 'class', 'section', 'absentees', 'attendanceStatus', 'reason', 'timestamp'];
-    var idx = keys.indexOf(currentSort.key);
-    if(idx !== -1){
-      headers[idx].classList.add(currentSort.dir === 'asc' ? 'sort-asc' : 'sort-desc');
-    }
-  }
+    headers.forEach(function(th) { th.classList.remove('sort-asc', 'sort-desc'); });
+}
 
   function bindTableSort(){
     var headers = document.querySelectorAll('#reportsTable th');
