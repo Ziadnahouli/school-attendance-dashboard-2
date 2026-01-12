@@ -43,8 +43,9 @@ function subscribeToAbsences(){
                 const data = doc.data();
                 return {
                     id: doc.id,
-                    teacherName: data.teacherName || 'System Record', // ADD THIS
-                    subject: data.subject || 'N/A',                   // ADD THIS
+                    teacherName: data.teacherName || 'System Record',
+                    subject: data.subject || 'N/A',
+                    session: data.session || 'N/A',
                     division: data.division,
                     class: data.class,
                     section: data.section,
@@ -115,7 +116,8 @@ function renderReports(reportsToDisplay) {
                     class: r.class,
                     section: r.section,
                     teacherName: r.teacherName, // <--- SAVES TEACHER NAME
-                    subject: r.subject,         // <--- SAVES SUBJECT
+                    subject: r.subject,
+                    session: r.session,         
                     statuses: new Set([(r.attendanceStatus||'').trim()]),
                     reasons: new Set([(r.reason||'').trim()].filter(Boolean)),
                     studentsMap: new Map(),
@@ -155,23 +157,38 @@ function renderReports(reportsToDisplay) {
             const formattedTime = reportData.timestamp.toLocaleString('en-US', { hour: '2-digit', minute: '2-digit', month: 'short', day: 'numeric' });
             
             card.innerHTML = `
-                <div class="card-header">
-                    <i class="fas fa-chalkboard-teacher"></i> 
-                    <div style="display:flex; flex-direction:column; margin-left:10px;">
-                        <span style="font-weight:700; font-size:14px;">${reportData.teacherName || 'Unknown Teacher'}</span>
-                        <span style="font-size:11px; opacity:0.8;">Subject: ${reportData.subject || 'N/A'}</span>
-                    </div>
-                    <span class="count-badge">${reportData.count || 0}</span>
-                </div>
-                <div class="card-body">
-                    <div class="meta-rows">
-                        <div class="meta-row"><span class="label">Class</span><span class="value">${reportData.class} (${reportData.section})</span></div>
-                        <div class="meta-row"><span class="label">Division</span><span class="value">${reportData.division}</span></div>
-                        <div class="meta-row"><span class="label">Students</span><span class="value" style="color:#c0392b; font-weight:600;">${reportData.students.map(s=>s.name).join(', ')}</span></div>
-                    </div>
-                </div>
-                <div class="card-footer"><i class="fas fa-clock"></i> Submitted: ${formattedTime}</div>
-            `;
+    <div class="card-header">
+        <i class="fas fa-chalkboard-teacher"></i> 
+        <div style="display:flex; flex-direction:column; margin-left:10px;">
+            <span style="font-weight:700; font-size:14px;">${reportData.teacherName || 'System Record'}</span>
+            <span style="font-size:11px; opacity:0.8;">
+                ${reportData.subject || 'N/A'} — <b style="color: #22c55e;">Session ${reportData.session || '?'}</b>
+            </span>
+        </div>
+        <span class="count-badge">${reportData.count || 0}</span>
+    </div>
+    <div class="card-body">
+        <div class="meta-rows" aria-label="Summary">
+            <div class="meta-row">
+                <span class="label"><i class="fas fa-school"></i> Class</span>
+                <span class="value">${reportData.class} (${reportData.section})</span>
+            </div>
+            <div class="meta-row">
+                <span class="label"><i class="fas fa-building"></i> Division</span>
+                <span class="value">${reportData.division}</span>
+            </div>
+            <div class="meta-row">
+                <span class="label"><i class="fas fa-user-slash"></i> Students</span>
+                <span class="value" style="white-space: normal; color: #c0392b; font-weight:600;">
+                    ${reportData.students.map(s => s.name).join(', ')}
+                </span>
+            </div>
+        </div>
+    </div>
+    <div class="card-footer">
+        <i class="fas fa-clock"></i> <b>Submitted:</b> ${formattedTime}
+    </div>
+`;
             reportsContainer.appendChild(card);
         });
     } else {
