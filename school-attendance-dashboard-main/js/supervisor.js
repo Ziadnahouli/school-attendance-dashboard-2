@@ -43,6 +43,8 @@ function subscribeToAbsences(){
                 const data = doc.data();
                 return {
                     id: doc.id,
+                    teacherName: data.teacherName || 'System Record', // ADD THIS
+                    subject: data.subject || 'N/A',                   // ADD THIS
                     division: data.division,
                     class: data.class,
                     section: data.section,
@@ -52,7 +54,7 @@ function subscribeToAbsences(){
                     students: Array.isArray(data.students) ? data.students : [],
                     status: data.status || 'active',
                     timestamp: data.timestamp ? data.timestamp.toDate() : new Date()
-                };
+    };
             }).filter(report => {
                 const div = String(report.division||'').trim().toLowerCase();
                 return allowedDivs.includes(div);
@@ -93,19 +95,18 @@ function renderReports(reportsToDisplay) {
     const emptyStateContainer = document.getElementById("empty-state-container");
     reportsContainer.innerHTML = '';
 
-    // Helper to normalize and extract students from a raw report
     const norm = (v) => String(v||'').trim().toLowerCase();
+    
     function extractStudents(r){
-        return (Array.isArray(r.students) && r.students.length>0
+        return (Array.isArray(r.students) && r.students.length > 0
             ? r.students.map(s=>({ name: String(s.name||'').trim(), status: String(s.status||r.attendanceStatus||'Unexcused').trim(), reason: String(s.reason||r.reason||'').trim() }))
             : String(r.absentees||'').split(',').map(n=>({ name: String(n||'').trim(), status: String(r.attendanceStatus||'Unexcused').trim(), reason: String(r.reason||'').trim() })).filter(s=>s.name));
     }
 
     let aggregated = [];
     if(window.groupByClass){
-        // Group by Division/Class/Section ONLY (ignore status/reason)
         const grouped = new Map();
-        reportsToDisplay.forEach(r=>{
+        reportsToDisplay.forEach(r => {
             const key = [norm(r.division), norm(r.class), norm(r.section)].join('||');
             const existing = grouped.get(key);
             if(!existing){
@@ -113,6 +114,8 @@ function renderReports(reportsToDisplay) {
                     division: r.division,
                     class: r.class,
                     section: r.section,
+                    teacherName: r.teacherName, // <--- SAVES TEACHER NAME
+                    subject: r.subject,         // <--- SAVES SUBJECT
                     statuses: new Set([(r.attendanceStatus||'').trim()]),
                     reasons: new Set([(r.reason||'').trim()].filter(Boolean)),
                     studentsMap: new Map(),
@@ -121,69 +124,53 @@ function renderReports(reportsToDisplay) {
             } else {
                 existing.statuses.add((r.attendanceStatus||'').trim());
                 const rz = (r.reason||'').trim(); if(rz) existing.reasons.add(rz);
-                const t0 = existing.timestamp instanceof Date ? existing.timestamp : new Date(existing.timestamp);
-                const t1 = r.timestamp instanceof Date ? r.timestamp : new Date(r.timestamp);
-                if (t1 > t0) existing.timestamp = r.timestamp;
+                if (r.timestamp > existing.timestamp) existing.timestamp = r.timestamp;
             }
             const bucket = grouped.get(key);
-            extractStudents(r).forEach(s=>{
+            extractStudents(r).forEach(s => {
                 const nm = norm(s.name); if(!nm) return;
-                const prev = bucket.studentsMap.get(nm);
-                if(!prev){ bucket.studentsMap.set(nm, { name: s.name, status: s.status, reason: s.reason }); }
+                if(!bucket.studentsMap.has(nm)){ bucket.studentsMap.set(nm, { name: s.name, status: s.status, reason: s.reason }); }
             });
         });
-        aggregated = Array.from(grouped.values()).map(item=>({
-            division: item.division,
-            class: item.class,
-            section: item.section,
-            attendanceStatus: (item.statuses.size === 1 ? Array.from(item.statuses)[0] : 'Mixed'),
-            reason: (item.reasons.size <= 1 ? (Array.from(item.reasons)[0] || '') : 'Multiple'),
+        aggregated = Array.from(grouped.values()).map(item => ({
+            ...item,
             students: Array.from(item.studentsMap.values()),
-            count: item.studentsMap.size,
-            timestamp: item.timestamp
+            count: item.studentsMap.size
         }));
     } else {
-        // No grouping: show one card per raw report
-        aggregated = reportsToDisplay.map(r=>{
-            const students = extractStudents(r);
-            return {
-                division: r.division,
-                class: r.class,
-                section: r.section,
-                attendanceStatus: r.attendanceStatus || '',
-                reason: r.reason || '',
-                students: students,
-                count: students.length,
-                timestamp: r.timestamp
-            };
-        });
+        aggregated = reportsToDisplay.map(r => ({
+            ...r,
+            students: extractStudents(r),
+            count: extractStudents(r).length
+        }));
     }
 
-    aggregated.sort((a,b)=>{
-        const da = a.timestamp instanceof Date ? a.timestamp : new Date(a.timestamp);
-        const db = b.timestamp instanceof Date ? b.timestamp : new Date(b.timestamp);
-        return db - da;
-    });
+    aggregated.sort((a,b) => b.timestamp - a.timestamp);
 
     if (aggregated.length > 0) {
         emptyStateContainer.style.display = 'none';
         aggregated.forEach(reportData => {
             const card = document.createElement("div");
             card.className = "card compact";
-            const formattedTime = reportData.timestamp.toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+            const formattedTime = reportData.timestamp.toLocaleString('en-US', { hour: '2-digit', minute: '2-digit', month: 'short', day: 'numeric' });
             
             card.innerHTML = `
-                <div class="card-header"><i class="fas fa-school"></i> ${reportData.class}
+                <div class="card-header">
+                    <i class="fas fa-chalkboard-teacher"></i> 
+                    <div style="display:flex; flex-direction:column; margin-left:10px;">
+                        <span style="font-weight:700; font-size:14px;">${reportData.teacherName || 'Unknown Teacher'}</span>
+                        <span style="font-size:11px; opacity:0.8;">Subject: ${reportData.subject || 'N/A'}</span>
+                    </div>
                     <span class="count-badge">${reportData.count || 0}</span>
                 </div>
                 <div class="card-body">
-                    <div class="meta-rows" aria-label="Summary">
-                        <div class="meta-row"><span class="label"><i class="fas fa-building"></i> Division</span><span class="value">${reportData.division}</span></div>
-                        <div class="meta-row"><span class="label"><i class="fas fa-chalkboard"></i> Section</span><span class="value">${reportData.section}</span></div>
-                        <div class="meta-row"><span class="label"><i class="fas fa-user"></i> Name</span><span class="value">${reportData.students.map(s=>s.name).join(', ')}</span></div>
+                    <div class="meta-rows">
+                        <div class="meta-row"><span class="label">Class</span><span class="value">${reportData.class} (${reportData.section})</span></div>
+                        <div class="meta-row"><span class="label">Division</span><span class="value">${reportData.division}</span></div>
+                        <div class="meta-row"><span class="label">Students</span><span class="value" style="color:#c0392b; font-weight:600;">${reportData.students.map(s=>s.name).join(', ')}</span></div>
                     </div>
                 </div>
-                <div class="card-footer"><i class="fas fa-clock"></i> Reported On: ${formattedTime}</div>
+                <div class="card-footer"><i class="fas fa-clock"></i> Submitted: ${formattedTime}</div>
             `;
             reportsContainer.appendChild(card);
         });
@@ -191,6 +178,11 @@ function renderReports(reportsToDisplay) {
         emptyStateContainer.style.display = 'block';
     }
 }
+
+// REMOVE THE OLD DOMContentLoaded BLOCK AT THE BOTTOM AND USE THIS INSTEAD:
+document.addEventListener('DOMContentLoaded', () => {
+    console.log("Dashboard initialized");
+});
 
 window.resetAbsences = async function() {
     if (!confirm("Are you sure you want to permanently delete today's absences? This action cannot be undone.")) return;
